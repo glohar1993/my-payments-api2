@@ -307,7 +307,7 @@ export class ServiceStack extends cdk.Stack {
       new synthetics.CfnCanary(this, 'HealthCanary', {
         name: `${serviceName.substring(0, 15)}-${environment.substring(0, 3)}-canary`,
         executionRoleArn: canaryRole.roleArn,
-        artifactS3Location: `s3://${slug}-${environment}-canary-artifacts`,
+        artifactS3Location: `s3://${serviceName}-${environment}-canary-artifacts`,
         runtimeVersion: 'syn-nodejs-puppeteer-15.0',
         schedule: {
           expression: 'rate(5 minutes)', // Run every 5 minutes
