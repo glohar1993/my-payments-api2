@@ -47,6 +47,7 @@ export interface ServiceStackProps extends cdk.StackProps {
   environment: string;
   enableDynamoDB?: boolean;
   enableMonitoring?: boolean;
+  reservedConcurrency?: number;
 }
 
 // ============================================================
@@ -63,7 +64,7 @@ export class ServiceStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props: ServiceStackProps) {
     super(scope, id, props);
 
-    const { serviceName, teamName, environment, enableDynamoDB = true, enableMonitoring = true } = props;
+    const { serviceName, teamName, environment, enableDynamoDB = true, enableMonitoring = true, reservedConcurrency } = props;
 
     // ========================================================
     // 1. DynamoDB Table
@@ -135,7 +136,7 @@ export class ServiceStack extends cdk.Stack {
       // Reserved concurrency prevents one service from starving others
       // At Mastercard scale, this prevents a runaway service from
       // consuming all Lambda capacity in the account
-      reservedConcurrentExecutions: undefined,
+      reservedConcurrentExecutions: reservedConcurrency,
 
       /**
        * VPC DEPLOYMENT (commented out for simplicity):

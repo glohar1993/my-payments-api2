@@ -1,0 +1,1339 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Snapshot Tests infrastructure matches saved snapshot 1`] = `
+{
+  "Outputs": {
+    "ApiUrl": {
+      "Description": "API Gateway URL",
+      "Export": {
+        "Name": "test-service-dev-api-url",
+      },
+      "Value": {
+        "Fn::Join": [
+          "",
+          [
+            "https://",
+            {
+              "Ref": "ServiceApi4633ACD6",
+            },
+            ".execute-api.us-east-1.",
+            {
+              "Ref": "AWS::URLSuffix",
+            },
+            "/",
+            {
+              "Ref": "ServiceApiDeploymentStagedev768A6C26",
+            },
+            "/",
+          ],
+        ],
+      },
+    },
+    "DynamoTableName": {
+      "Description": "DynamoDB Table Name",
+      "Value": {
+        "Ref": "ServiceTableF4485380",
+      },
+    },
+    "LambdaFunctionArn": {
+      "Description": "Lambda Function ARN",
+      "Value": {
+        "Fn::GetAtt": [
+          "ServiceHandlerF07C7D00",
+          "Arn",
+        ],
+      },
+    },
+    "ServiceApiEndpoint55B38F80": {
+      "Value": {
+        "Fn::Join": [
+          "",
+          [
+            "https://",
+            {
+              "Ref": "ServiceApi4633ACD6",
+            },
+            ".execute-api.us-east-1.",
+            {
+              "Ref": "AWS::URLSuffix",
+            },
+            "/",
+            {
+              "Ref": "ServiceApiDeploymentStagedev768A6C26",
+            },
+            "/",
+          ],
+        ],
+      },
+    },
+  },
+  "Parameters": {
+    "BootstrapVersion": {
+      "Default": "/cdk-bootstrap/hnb659fds/version",
+      "Description": "Version of the CDK Bootstrap resources in this environment, automatically retrieved from SSM Parameter Store. [cdk:skip]",
+      "Type": "AWS::SSM::Parameter::Value<String>",
+    },
+  },
+  "Resources": {
+    "AlarmTopicD01E77F9": {
+      "Properties": {
+        "DisplayName": "test-service Alerts (dev)",
+        "TopicName": "test-service-dev-alarms",
+      },
+      "Type": "AWS::SNS::Topic",
+    },
+    "Api5xxAlarm31F257DC": {
+      "Properties": {
+        "AlarmActions": [
+          {
+            "Ref": "AlarmTopicD01E77F9",
+          },
+        ],
+        "AlarmDescription": "API 5xx errors exceeded threshold for test-service",
+        "AlarmName": "test-service-dev-api-5xx",
+        "ComparisonOperator": "GreaterThanOrEqualToThreshold",
+        "Dimensions": [
+          {
+            "Name": "ApiName",
+            "Value": "test-service-dev-api",
+          },
+        ],
+        "EvaluationPeriods": 1,
+        "MetricName": "5XXError",
+        "Namespace": "AWS/ApiGateway",
+        "Period": 300,
+        "Statistic": "Sum",
+        "Threshold": 10,
+      },
+      "Type": "AWS::CloudWatch::Alarm",
+    },
+    "ApiAccessLogsE9DF007D": {
+      "DeletionPolicy": "Retain",
+      "Properties": {
+        "LogGroupName": "/api/test-service/dev/access",
+        "RetentionInDays": 30,
+      },
+      "Type": "AWS::Logs::LogGroup",
+      "UpdateReplacePolicy": "Retain",
+    },
+    "DynamoThrottleAlarmF7D162EF": {
+      "Properties": {
+        "AlarmActions": [
+          {
+            "Ref": "AlarmTopicD01E77F9",
+          },
+        ],
+        "AlarmName": "test-service-dev-dynamo-throttle",
+        "ComparisonOperator": "GreaterThanOrEqualToThreshold",
+        "EvaluationPeriods": 2,
+        "Metrics": [
+          {
+            "Expression": "putitem + getitem",
+            "Id": "expr_1",
+            "Label": "Sum of throttled requests across all operations",
+            "ReturnData": true,
+          },
+          {
+            "Id": "putitem",
+            "MetricStat": {
+              "Metric": {
+                "Dimensions": [
+                  {
+                    "Name": "Operation",
+                    "Value": "PutItem",
+                  },
+                  {
+                    "Name": "TableName",
+                    "Value": {
+                      "Ref": "ServiceTableF4485380",
+                    },
+                  },
+                ],
+                "MetricName": "ThrottledRequests",
+                "Namespace": "AWS/DynamoDB",
+              },
+              "Period": 300,
+              "Stat": "Sum",
+            },
+            "ReturnData": false,
+          },
+          {
+            "Id": "getitem",
+            "MetricStat": {
+              "Metric": {
+                "Dimensions": [
+                  {
+                    "Name": "Operation",
+                    "Value": "GetItem",
+                  },
+                  {
+                    "Name": "TableName",
+                    "Value": {
+                      "Ref": "ServiceTableF4485380",
+                    },
+                  },
+                ],
+                "MetricName": "ThrottledRequests",
+                "Namespace": "AWS/DynamoDB",
+              },
+              "Period": 300,
+              "Stat": "Sum",
+            },
+            "ReturnData": false,
+          },
+        ],
+        "Threshold": 5,
+      },
+      "Type": "AWS::CloudWatch::Alarm",
+    },
+    "LambdaDurationAlarmA8007F1F": {
+      "Properties": {
+        "AlarmActions": [
+          {
+            "Ref": "AlarmTopicD01E77F9",
+          },
+        ],
+        "AlarmDescription": "Lambda p95 latency too high for test-service",
+        "AlarmName": "test-service-dev-lambda-duration",
+        "ComparisonOperator": "GreaterThanOrEqualToThreshold",
+        "Dimensions": [
+          {
+            "Name": "FunctionName",
+            "Value": {
+              "Ref": "ServiceHandlerF07C7D00",
+            },
+          },
+        ],
+        "EvaluationPeriods": 3,
+        "ExtendedStatistic": "p95",
+        "MetricName": "Duration",
+        "Namespace": "AWS/Lambda",
+        "Period": 300,
+        "Threshold": 10000,
+      },
+      "Type": "AWS::CloudWatch::Alarm",
+    },
+    "LambdaErrorAlarm646BFA4C": {
+      "Properties": {
+        "AlarmActions": [
+          {
+            "Ref": "AlarmTopicD01E77F9",
+          },
+        ],
+        "AlarmDescription": "Lambda errors exceeded threshold for test-service",
+        "AlarmName": "test-service-dev-lambda-errors",
+        "ComparisonOperator": "GreaterThanOrEqualToThreshold",
+        "Dimensions": [
+          {
+            "Name": "FunctionName",
+            "Value": {
+              "Ref": "ServiceHandlerF07C7D00",
+            },
+          },
+        ],
+        "EvaluationPeriods": 1,
+        "MetricName": "Errors",
+        "Namespace": "AWS/Lambda",
+        "Period": 300,
+        "Statistic": "Sum",
+        "Threshold": 5,
+        "TreatMissingData": "notBreaching",
+      },
+      "Type": "AWS::CloudWatch::Alarm",
+    },
+    "LogRetentionaae0aa3c5b4d4f87b02d85b201efdd8aFD4BFC8A": {
+      "DependsOn": [
+        "LogRetentionaae0aa3c5b4d4f87b02d85b201efdd8aServiceRoleDefaultPolicyADDA7DEB",
+        "LogRetentionaae0aa3c5b4d4f87b02d85b201efdd8aServiceRole9741ECFB",
+      ],
+      "Properties": {
+        "Code": {
+          "S3Bucket": "cdk-hnb659fds-assets-123456789012-us-east-1",
+          "S3Key": "2819175352ad1ce0dae768e83fc328fb70fb5f10b4a8ff0ccbcb791f02b0716d.zip",
+        },
+        "Handler": "index.handler",
+        "Role": {
+          "Fn::GetAtt": [
+            "LogRetentionaae0aa3c5b4d4f87b02d85b201efdd8aServiceRole9741ECFB",
+            "Arn",
+          ],
+        },
+        "Runtime": "nodejs22.x",
+        "Timeout": 900,
+      },
+      "Type": "AWS::Lambda::Function",
+    },
+    "LogRetentionaae0aa3c5b4d4f87b02d85b201efdd8aServiceRole9741ECFB": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
+              ],
+            ],
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "LogRetentionaae0aa3c5b4d4f87b02d85b201efdd8aServiceRoleDefaultPolicyADDA7DEB": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "logs:PutRetentionPolicy",
+                "logs:DeleteRetentionPolicy",
+              ],
+              "Effect": "Allow",
+              "Resource": "*",
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "LogRetentionaae0aa3c5b4d4f87b02d85b201efdd8aServiceRoleDefaultPolicyADDA7DEB",
+        "Roles": [
+          {
+            "Ref": "LogRetentionaae0aa3c5b4d4f87b02d85b201efdd8aServiceRole9741ECFB",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
+    },
+    "ServiceApi4633ACD6": {
+      "Properties": {
+        "Description": "API for test-service (dev)",
+        "Name": "test-service-dev-api",
+      },
+      "Type": "AWS::ApiGateway::RestApi",
+    },
+    "ServiceApiAccount089C272C": {
+      "DeletionPolicy": "Retain",
+      "DependsOn": [
+        "ServiceApi4633ACD6",
+      ],
+      "Properties": {
+        "CloudWatchRoleArn": {
+          "Fn::GetAtt": [
+            "ServiceApiCloudWatchRole6CCE95D2",
+            "Arn",
+          ],
+        },
+      },
+      "Type": "AWS::ApiGateway::Account",
+      "UpdateReplacePolicy": "Retain",
+    },
+    "ServiceApiCloudWatchRole6CCE95D2": {
+      "DeletionPolicy": "Retain",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "apigateway.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                ":iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs",
+              ],
+            ],
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Role",
+      "UpdateReplacePolicy": "Retain",
+    },
+    "ServiceApiDeployment2D4CC9AC402df074c583b546d62151af87cad453": {
+      "DependsOn": [
+        "ServiceApihealthGET6B940DEA",
+        "ServiceApihealthOPTIONS568AEA66",
+        "ServiceApihealth5BD2CEEB",
+        "ServiceApiitemsidGET412EE116",
+        "ServiceApiitemsidOPTIONS48946264",
+        "ServiceApiitemsid3EFF3599",
+        "ServiceApiitemsGET892EC304",
+        "ServiceApiitemsOPTIONSE0B3068D",
+        "ServiceApiitemsPOSTF70A7236",
+        "ServiceApiitems8C20BFC1",
+        "ServiceApiOPTIONS052DF766",
+      ],
+      "Metadata": {
+        "aws:cdk:do-not-refactor": true,
+      },
+      "Properties": {
+        "Description": "API for test-service (dev)",
+        "RestApiId": {
+          "Ref": "ServiceApi4633ACD6",
+        },
+      },
+      "Type": "AWS::ApiGateway::Deployment",
+    },
+    "ServiceApiDeploymentStagedev768A6C26": {
+      "DependsOn": [
+        "ServiceApiAccount089C272C",
+      ],
+      "Properties": {
+        "AccessLogSetting": {
+          "DestinationArn": {
+            "Fn::GetAtt": [
+              "ApiAccessLogsE9DF007D",
+              "Arn",
+            ],
+          },
+          "Format": "{"requestId":"$context.requestId","ip":"$context.identity.sourceIp","user":"$context.identity.user","caller":"$context.identity.caller","requestTime":"$context.requestTime","httpMethod":"$context.httpMethod","resourcePath":"$context.resourcePath","status":"$context.status","protocol":"$context.protocol","responseLength":"$context.responseLength"}",
+        },
+        "DeploymentId": {
+          "Ref": "ServiceApiDeployment2D4CC9AC402df074c583b546d62151af87cad453",
+        },
+        "MethodSettings": [
+          {
+            "DataTraceEnabled": false,
+            "HttpMethod": "*",
+            "ResourcePath": "/*",
+            "ThrottlingBurstLimit": 500,
+            "ThrottlingRateLimit": 1000,
+          },
+        ],
+        "RestApiId": {
+          "Ref": "ServiceApi4633ACD6",
+        },
+        "StageName": "dev",
+        "TracingEnabled": true,
+      },
+      "Type": "AWS::ApiGateway::Stage",
+    },
+    "ServiceApiOPTIONS052DF766": {
+      "Properties": {
+        "ApiKeyRequired": false,
+        "AuthorizationType": "NONE",
+        "HttpMethod": "OPTIONS",
+        "Integration": {
+          "IntegrationResponses": [
+            {
+              "ResponseParameters": {
+                "method.response.header.Access-Control-Allow-Headers": "'Content-Type,Authorization,X-Request-Id'",
+                "method.response.header.Access-Control-Allow-Methods": "'OPTIONS,GET,PUT,POST,DELETE,PATCH,HEAD'",
+                "method.response.header.Access-Control-Allow-Origin": "'*'",
+              },
+              "StatusCode": "204",
+            },
+          ],
+          "RequestTemplates": {
+            "application/json": "{ statusCode: 200 }",
+          },
+          "Type": "MOCK",
+        },
+        "MethodResponses": [
+          {
+            "ResponseParameters": {
+              "method.response.header.Access-Control-Allow-Headers": true,
+              "method.response.header.Access-Control-Allow-Methods": true,
+              "method.response.header.Access-Control-Allow-Origin": true,
+            },
+            "StatusCode": "204",
+          },
+        ],
+        "ResourceId": {
+          "Fn::GetAtt": [
+            "ServiceApi4633ACD6",
+            "RootResourceId",
+          ],
+        },
+        "RestApiId": {
+          "Ref": "ServiceApi4633ACD6",
+        },
+      },
+      "Type": "AWS::ApiGateway::Method",
+    },
+    "ServiceApihealth5BD2CEEB": {
+      "Properties": {
+        "ParentId": {
+          "Fn::GetAtt": [
+            "ServiceApi4633ACD6",
+            "RootResourceId",
+          ],
+        },
+        "PathPart": "health",
+        "RestApiId": {
+          "Ref": "ServiceApi4633ACD6",
+        },
+      },
+      "Type": "AWS::ApiGateway::Resource",
+    },
+    "ServiceApihealthGET6B940DEA": {
+      "Properties": {
+        "AuthorizationType": "NONE",
+        "HttpMethod": "GET",
+        "Integration": {
+          "IntegrationHttpMethod": "POST",
+          "Type": "AWS_PROXY",
+          "Uri": {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                ":apigateway:us-east-1:lambda:path/2015-03-31/functions/",
+                {
+                  "Fn::GetAtt": [
+                    "ServiceHandlerF07C7D00",
+                    "Arn",
+                  ],
+                },
+                "/invocations",
+              ],
+            ],
+          },
+        },
+        "ResourceId": {
+          "Ref": "ServiceApihealth5BD2CEEB",
+        },
+        "RestApiId": {
+          "Ref": "ServiceApi4633ACD6",
+        },
+      },
+      "Type": "AWS::ApiGateway::Method",
+    },
+    "ServiceApihealthGETApiPermissionTestStackServiceApiA716C636GEThealth743314CE": {
+      "Properties": {
+        "Action": "lambda:InvokeFunction",
+        "FunctionName": {
+          "Fn::GetAtt": [
+            "ServiceHandlerF07C7D00",
+            "Arn",
+          ],
+        },
+        "Principal": "apigateway.amazonaws.com",
+        "SourceArn": {
+          "Fn::Join": [
+            "",
+            [
+              "arn:",
+              {
+                "Ref": "AWS::Partition",
+              },
+              ":execute-api:us-east-1:123456789012:",
+              {
+                "Ref": "ServiceApi4633ACD6",
+              },
+              "/",
+              {
+                "Ref": "ServiceApiDeploymentStagedev768A6C26",
+              },
+              "/GET/health",
+            ],
+          ],
+        },
+      },
+      "Type": "AWS::Lambda::Permission",
+    },
+    "ServiceApihealthGETApiPermissionTestTestStackServiceApiA716C636GEThealthFF03F523": {
+      "Properties": {
+        "Action": "lambda:InvokeFunction",
+        "FunctionName": {
+          "Fn::GetAtt": [
+            "ServiceHandlerF07C7D00",
+            "Arn",
+          ],
+        },
+        "Principal": "apigateway.amazonaws.com",
+        "SourceArn": {
+          "Fn::Join": [
+            "",
+            [
+              "arn:",
+              {
+                "Ref": "AWS::Partition",
+              },
+              ":execute-api:us-east-1:123456789012:",
+              {
+                "Ref": "ServiceApi4633ACD6",
+              },
+              "/test-invoke-stage/GET/health",
+            ],
+          ],
+        },
+      },
+      "Type": "AWS::Lambda::Permission",
+    },
+    "ServiceApihealthOPTIONS568AEA66": {
+      "Properties": {
+        "ApiKeyRequired": false,
+        "AuthorizationType": "NONE",
+        "HttpMethod": "OPTIONS",
+        "Integration": {
+          "IntegrationResponses": [
+            {
+              "ResponseParameters": {
+                "method.response.header.Access-Control-Allow-Headers": "'Content-Type,Authorization,X-Request-Id'",
+                "method.response.header.Access-Control-Allow-Methods": "'OPTIONS,GET,PUT,POST,DELETE,PATCH,HEAD'",
+                "method.response.header.Access-Control-Allow-Origin": "'*'",
+              },
+              "StatusCode": "204",
+            },
+          ],
+          "RequestTemplates": {
+            "application/json": "{ statusCode: 200 }",
+          },
+          "Type": "MOCK",
+        },
+        "MethodResponses": [
+          {
+            "ResponseParameters": {
+              "method.response.header.Access-Control-Allow-Headers": true,
+              "method.response.header.Access-Control-Allow-Methods": true,
+              "method.response.header.Access-Control-Allow-Origin": true,
+            },
+            "StatusCode": "204",
+          },
+        ],
+        "ResourceId": {
+          "Ref": "ServiceApihealth5BD2CEEB",
+        },
+        "RestApiId": {
+          "Ref": "ServiceApi4633ACD6",
+        },
+      },
+      "Type": "AWS::ApiGateway::Method",
+    },
+    "ServiceApiitems8C20BFC1": {
+      "Properties": {
+        "ParentId": {
+          "Fn::GetAtt": [
+            "ServiceApi4633ACD6",
+            "RootResourceId",
+          ],
+        },
+        "PathPart": "items",
+        "RestApiId": {
+          "Ref": "ServiceApi4633ACD6",
+        },
+      },
+      "Type": "AWS::ApiGateway::Resource",
+    },
+    "ServiceApiitemsGET892EC304": {
+      "Properties": {
+        "AuthorizationType": "NONE",
+        "HttpMethod": "GET",
+        "Integration": {
+          "IntegrationHttpMethod": "POST",
+          "Type": "AWS_PROXY",
+          "Uri": {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                ":apigateway:us-east-1:lambda:path/2015-03-31/functions/",
+                {
+                  "Fn::GetAtt": [
+                    "ServiceHandlerF07C7D00",
+                    "Arn",
+                  ],
+                },
+                "/invocations",
+              ],
+            ],
+          },
+        },
+        "ResourceId": {
+          "Ref": "ServiceApiitems8C20BFC1",
+        },
+        "RestApiId": {
+          "Ref": "ServiceApi4633ACD6",
+        },
+      },
+      "Type": "AWS::ApiGateway::Method",
+    },
+    "ServiceApiitemsGETApiPermissionTestStackServiceApiA716C636GETitemsFDCE39E4": {
+      "Properties": {
+        "Action": "lambda:InvokeFunction",
+        "FunctionName": {
+          "Fn::GetAtt": [
+            "ServiceHandlerF07C7D00",
+            "Arn",
+          ],
+        },
+        "Principal": "apigateway.amazonaws.com",
+        "SourceArn": {
+          "Fn::Join": [
+            "",
+            [
+              "arn:",
+              {
+                "Ref": "AWS::Partition",
+              },
+              ":execute-api:us-east-1:123456789012:",
+              {
+                "Ref": "ServiceApi4633ACD6",
+              },
+              "/",
+              {
+                "Ref": "ServiceApiDeploymentStagedev768A6C26",
+              },
+              "/GET/items",
+            ],
+          ],
+        },
+      },
+      "Type": "AWS::Lambda::Permission",
+    },
+    "ServiceApiitemsGETApiPermissionTestTestStackServiceApiA716C636GETitemsF26DFF44": {
+      "Properties": {
+        "Action": "lambda:InvokeFunction",
+        "FunctionName": {
+          "Fn::GetAtt": [
+            "ServiceHandlerF07C7D00",
+            "Arn",
+          ],
+        },
+        "Principal": "apigateway.amazonaws.com",
+        "SourceArn": {
+          "Fn::Join": [
+            "",
+            [
+              "arn:",
+              {
+                "Ref": "AWS::Partition",
+              },
+              ":execute-api:us-east-1:123456789012:",
+              {
+                "Ref": "ServiceApi4633ACD6",
+              },
+              "/test-invoke-stage/GET/items",
+            ],
+          ],
+        },
+      },
+      "Type": "AWS::Lambda::Permission",
+    },
+    "ServiceApiitemsOPTIONSE0B3068D": {
+      "Properties": {
+        "ApiKeyRequired": false,
+        "AuthorizationType": "NONE",
+        "HttpMethod": "OPTIONS",
+        "Integration": {
+          "IntegrationResponses": [
+            {
+              "ResponseParameters": {
+                "method.response.header.Access-Control-Allow-Headers": "'Content-Type,Authorization,X-Request-Id'",
+                "method.response.header.Access-Control-Allow-Methods": "'OPTIONS,GET,PUT,POST,DELETE,PATCH,HEAD'",
+                "method.response.header.Access-Control-Allow-Origin": "'*'",
+              },
+              "StatusCode": "204",
+            },
+          ],
+          "RequestTemplates": {
+            "application/json": "{ statusCode: 200 }",
+          },
+          "Type": "MOCK",
+        },
+        "MethodResponses": [
+          {
+            "ResponseParameters": {
+              "method.response.header.Access-Control-Allow-Headers": true,
+              "method.response.header.Access-Control-Allow-Methods": true,
+              "method.response.header.Access-Control-Allow-Origin": true,
+            },
+            "StatusCode": "204",
+          },
+        ],
+        "ResourceId": {
+          "Ref": "ServiceApiitems8C20BFC1",
+        },
+        "RestApiId": {
+          "Ref": "ServiceApi4633ACD6",
+        },
+      },
+      "Type": "AWS::ApiGateway::Method",
+    },
+    "ServiceApiitemsPOSTApiPermissionTestStackServiceApiA716C636POSTitems65391F67": {
+      "Properties": {
+        "Action": "lambda:InvokeFunction",
+        "FunctionName": {
+          "Fn::GetAtt": [
+            "ServiceHandlerF07C7D00",
+            "Arn",
+          ],
+        },
+        "Principal": "apigateway.amazonaws.com",
+        "SourceArn": {
+          "Fn::Join": [
+            "",
+            [
+              "arn:",
+              {
+                "Ref": "AWS::Partition",
+              },
+              ":execute-api:us-east-1:123456789012:",
+              {
+                "Ref": "ServiceApi4633ACD6",
+              },
+              "/",
+              {
+                "Ref": "ServiceApiDeploymentStagedev768A6C26",
+              },
+              "/POST/items",
+            ],
+          ],
+        },
+      },
+      "Type": "AWS::Lambda::Permission",
+    },
+    "ServiceApiitemsPOSTApiPermissionTestTestStackServiceApiA716C636POSTitemsE2F740D7": {
+      "Properties": {
+        "Action": "lambda:InvokeFunction",
+        "FunctionName": {
+          "Fn::GetAtt": [
+            "ServiceHandlerF07C7D00",
+            "Arn",
+          ],
+        },
+        "Principal": "apigateway.amazonaws.com",
+        "SourceArn": {
+          "Fn::Join": [
+            "",
+            [
+              "arn:",
+              {
+                "Ref": "AWS::Partition",
+              },
+              ":execute-api:us-east-1:123456789012:",
+              {
+                "Ref": "ServiceApi4633ACD6",
+              },
+              "/test-invoke-stage/POST/items",
+            ],
+          ],
+        },
+      },
+      "Type": "AWS::Lambda::Permission",
+    },
+    "ServiceApiitemsPOSTF70A7236": {
+      "Properties": {
+        "AuthorizationType": "NONE",
+        "HttpMethod": "POST",
+        "Integration": {
+          "IntegrationHttpMethod": "POST",
+          "Type": "AWS_PROXY",
+          "Uri": {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                ":apigateway:us-east-1:lambda:path/2015-03-31/functions/",
+                {
+                  "Fn::GetAtt": [
+                    "ServiceHandlerF07C7D00",
+                    "Arn",
+                  ],
+                },
+                "/invocations",
+              ],
+            ],
+          },
+        },
+        "ResourceId": {
+          "Ref": "ServiceApiitems8C20BFC1",
+        },
+        "RestApiId": {
+          "Ref": "ServiceApi4633ACD6",
+        },
+      },
+      "Type": "AWS::ApiGateway::Method",
+    },
+    "ServiceApiitemsid3EFF3599": {
+      "Properties": {
+        "ParentId": {
+          "Ref": "ServiceApiitems8C20BFC1",
+        },
+        "PathPart": "{id}",
+        "RestApiId": {
+          "Ref": "ServiceApi4633ACD6",
+        },
+      },
+      "Type": "AWS::ApiGateway::Resource",
+    },
+    "ServiceApiitemsidGET412EE116": {
+      "Properties": {
+        "AuthorizationType": "NONE",
+        "HttpMethod": "GET",
+        "Integration": {
+          "IntegrationHttpMethod": "POST",
+          "Type": "AWS_PROXY",
+          "Uri": {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                ":apigateway:us-east-1:lambda:path/2015-03-31/functions/",
+                {
+                  "Fn::GetAtt": [
+                    "ServiceHandlerF07C7D00",
+                    "Arn",
+                  ],
+                },
+                "/invocations",
+              ],
+            ],
+          },
+        },
+        "ResourceId": {
+          "Ref": "ServiceApiitemsid3EFF3599",
+        },
+        "RestApiId": {
+          "Ref": "ServiceApi4633ACD6",
+        },
+      },
+      "Type": "AWS::ApiGateway::Method",
+    },
+    "ServiceApiitemsidGETApiPermissionTestStackServiceApiA716C636GETitemsid5661B197": {
+      "Properties": {
+        "Action": "lambda:InvokeFunction",
+        "FunctionName": {
+          "Fn::GetAtt": [
+            "ServiceHandlerF07C7D00",
+            "Arn",
+          ],
+        },
+        "Principal": "apigateway.amazonaws.com",
+        "SourceArn": {
+          "Fn::Join": [
+            "",
+            [
+              "arn:",
+              {
+                "Ref": "AWS::Partition",
+              },
+              ":execute-api:us-east-1:123456789012:",
+              {
+                "Ref": "ServiceApi4633ACD6",
+              },
+              "/",
+              {
+                "Ref": "ServiceApiDeploymentStagedev768A6C26",
+              },
+              "/GET/items/*",
+            ],
+          ],
+        },
+      },
+      "Type": "AWS::Lambda::Permission",
+    },
+    "ServiceApiitemsidGETApiPermissionTestTestStackServiceApiA716C636GETitemsid0B0CEDCA": {
+      "Properties": {
+        "Action": "lambda:InvokeFunction",
+        "FunctionName": {
+          "Fn::GetAtt": [
+            "ServiceHandlerF07C7D00",
+            "Arn",
+          ],
+        },
+        "Principal": "apigateway.amazonaws.com",
+        "SourceArn": {
+          "Fn::Join": [
+            "",
+            [
+              "arn:",
+              {
+                "Ref": "AWS::Partition",
+              },
+              ":execute-api:us-east-1:123456789012:",
+              {
+                "Ref": "ServiceApi4633ACD6",
+              },
+              "/test-invoke-stage/GET/items/*",
+            ],
+          ],
+        },
+      },
+      "Type": "AWS::Lambda::Permission",
+    },
+    "ServiceApiitemsidOPTIONS48946264": {
+      "Properties": {
+        "ApiKeyRequired": false,
+        "AuthorizationType": "NONE",
+        "HttpMethod": "OPTIONS",
+        "Integration": {
+          "IntegrationResponses": [
+            {
+              "ResponseParameters": {
+                "method.response.header.Access-Control-Allow-Headers": "'Content-Type,Authorization,X-Request-Id'",
+                "method.response.header.Access-Control-Allow-Methods": "'OPTIONS,GET,PUT,POST,DELETE,PATCH,HEAD'",
+                "method.response.header.Access-Control-Allow-Origin": "'*'",
+              },
+              "StatusCode": "204",
+            },
+          ],
+          "RequestTemplates": {
+            "application/json": "{ statusCode: 200 }",
+          },
+          "Type": "MOCK",
+        },
+        "MethodResponses": [
+          {
+            "ResponseParameters": {
+              "method.response.header.Access-Control-Allow-Headers": true,
+              "method.response.header.Access-Control-Allow-Methods": true,
+              "method.response.header.Access-Control-Allow-Origin": true,
+            },
+            "StatusCode": "204",
+          },
+        ],
+        "ResourceId": {
+          "Ref": "ServiceApiitemsid3EFF3599",
+        },
+        "RestApiId": {
+          "Ref": "ServiceApi4633ACD6",
+        },
+      },
+      "Type": "AWS::ApiGateway::Method",
+    },
+    "ServiceDashboard3C555A71": {
+      "Properties": {
+        "DashboardBody": {
+          "Fn::Join": [
+            "",
+            [
+              "{"widgets":[{"type":"metric","width":12,"height":6,"x":0,"y":0,"properties":{"view":"timeSeries","title":"API Requests","region":"",
+              {
+                "Ref": "AWS::Region",
+              },
+              "","metrics":[["AWS/ApiGateway","Count","ApiName","test-service-dev-api",{"stat":"SampleCount"}]],"yAxis":{}}},{"type":"metric","width":12,"height":6,"x":12,"y":0,"properties":{"view":"timeSeries","title":"API Latency (p50, p95, p99)","region":"",
+              {
+                "Ref": "AWS::Region",
+              },
+              "","metrics":[["AWS/ApiGateway","Latency","ApiName","test-service-dev-api",{"stat":"p50"}],["AWS/ApiGateway","Latency","ApiName","test-service-dev-api",{"stat":"p95"}],["AWS/ApiGateway","Latency","ApiName","test-service-dev-api",{"stat":"p99"}]],"yAxis":{}}},{"type":"metric","width":12,"height":6,"x":0,"y":6,"properties":{"view":"timeSeries","title":"API Errors (4xx & 5xx)","region":"",
+              {
+                "Ref": "AWS::Region",
+              },
+              "","metrics":[["AWS/ApiGateway","4XXError","ApiName","test-service-dev-api",{"stat":"Sum"}],["AWS/ApiGateway","5XXError","ApiName","test-service-dev-api",{"stat":"Sum"}]],"yAxis":{}}},{"type":"metric","width":12,"height":6,"x":12,"y":6,"properties":{"view":"timeSeries","title":"Lambda Invocations & Errors","region":"",
+              {
+                "Ref": "AWS::Region",
+              },
+              "","metrics":[["AWS/Lambda","Invocations","FunctionName","",
+              {
+                "Ref": "ServiceHandlerF07C7D00",
+              },
+              "",{"stat":"Sum"}],["AWS/Lambda","Errors","FunctionName","",
+              {
+                "Ref": "ServiceHandlerF07C7D00",
+              },
+              "",{"stat":"Sum"}]],"yAxis":{}}}]}",
+            ],
+          ],
+        },
+        "DashboardName": "test-service-dev",
+      },
+      "Type": "AWS::CloudWatch::Dashboard",
+    },
+    "ServiceHandlerF07C7D00": {
+      "DependsOn": [
+        "ServiceHandlerServiceRoleDefaultPolicyA7F6C978",
+        "ServiceHandlerServiceRole33EA1032",
+      ],
+      "Properties": {
+        "Code": {
+          "S3Bucket": "cdk-hnb659fds-assets-123456789012-us-east-1",
+          "S3Key": "4e3fd597682bd3820cca70d765c93beb03e715bd40531f8bf7146538e8e969f2.zip",
+        },
+        "Environment": {
+          "Variables": {
+            "ENVIRONMENT": "dev",
+            "NODE_OPTIONS": "--enable-source-maps",
+            "SERVICE_NAME": "test-service",
+            "TABLE_NAME": {
+              "Ref": "ServiceTableF4485380",
+            },
+            "TEAM_NAME": "platform-engineering",
+          },
+        },
+        "FunctionName": "test-service-dev-handler",
+        "Handler": "handler.handler",
+        "MemorySize": 512,
+        "Role": {
+          "Fn::GetAtt": [
+            "ServiceHandlerServiceRole33EA1032",
+            "Arn",
+          ],
+        },
+        "Runtime": "nodejs20.x",
+        "Timeout": 30,
+        "TracingConfig": {
+          "Mode": "Active",
+        },
+      },
+      "Type": "AWS::Lambda::Function",
+    },
+    "ServiceHandlerLogRetention16329710": {
+      "Properties": {
+        "LogGroupName": {
+          "Fn::Join": [
+            "",
+            [
+              "/aws/lambda/",
+              {
+                "Ref": "ServiceHandlerF07C7D00",
+              },
+            ],
+          ],
+        },
+        "RetentionInDays": 30,
+        "ServiceToken": {
+          "Fn::GetAtt": [
+            "LogRetentionaae0aa3c5b4d4f87b02d85b201efdd8aFD4BFC8A",
+            "Arn",
+          ],
+        },
+      },
+      "Type": "Custom::LogRetention",
+    },
+    "ServiceHandlerServiceRole33EA1032": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
+              ],
+            ],
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "ServiceHandlerServiceRoleDefaultPolicyA7F6C978": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "xray:PutTraceSegments",
+                "xray:PutTelemetryRecords",
+              ],
+              "Effect": "Allow",
+              "Resource": "*",
+            },
+            {
+              "Action": [
+                "dynamodb:BatchGetItem",
+                "dynamodb:Query",
+                "dynamodb:GetItem",
+                "dynamodb:Scan",
+                "dynamodb:ConditionCheckItem",
+                "dynamodb:BatchWriteItem",
+                "dynamodb:PutItem",
+                "dynamodb:UpdateItem",
+                "dynamodb:DeleteItem",
+                "dynamodb:DescribeTable",
+              ],
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "ServiceTableF4485380",
+                    "Arn",
+                  ],
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      {
+                        "Fn::GetAtt": [
+                          "ServiceTableF4485380",
+                          "Arn",
+                        ],
+                      },
+                      "/index/*",
+                    ],
+                  ],
+                },
+              ],
+            },
+            {
+              "Action": [
+                "dynamodb:GetRecords",
+                "dynamodb:GetShardIterator",
+              ],
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "ServiceTableF4485380",
+                    "Arn",
+                  ],
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      {
+                        "Fn::GetAtt": [
+                          "ServiceTableF4485380",
+                          "Arn",
+                        ],
+                      },
+                      "/index/*",
+                    ],
+                  ],
+                },
+              ],
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "ServiceHandlerServiceRoleDefaultPolicyA7F6C978",
+        "Roles": [
+          {
+            "Ref": "ServiceHandlerServiceRole33EA1032",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
+    },
+    "ServiceTableF4485380": {
+      "DeletionPolicy": "Delete",
+      "Properties": {
+        "AttributeDefinitions": [
+          {
+            "AttributeName": "id",
+            "AttributeType": "S",
+          },
+          {
+            "AttributeName": "team",
+            "AttributeType": "S",
+          },
+          {
+            "AttributeName": "createdAt",
+            "AttributeType": "S",
+          },
+        ],
+        "BillingMode": "PAY_PER_REQUEST",
+        "GlobalSecondaryIndexes": [
+          {
+            "IndexName": "team-index",
+            "KeySchema": [
+              {
+                "AttributeName": "team",
+                "KeyType": "HASH",
+              },
+              {
+                "AttributeName": "createdAt",
+                "KeyType": "RANGE",
+              },
+            ],
+            "Projection": {
+              "ProjectionType": "ALL",
+            },
+          },
+        ],
+        "KeySchema": [
+          {
+            "AttributeName": "id",
+            "KeyType": "HASH",
+          },
+        ],
+        "PointInTimeRecoverySpecification": {
+          "PointInTimeRecoveryEnabled": true,
+        },
+        "SSESpecification": {
+          "SSEEnabled": true,
+        },
+        "TableName": "test-service-dev-table",
+        "TimeToLiveSpecification": {
+          "AttributeName": "ttl",
+          "Enabled": true,
+        },
+      },
+      "Type": "AWS::DynamoDB::Table",
+      "UpdateReplacePolicy": "Delete",
+    },
+  },
+  "Rules": {
+    "CheckBootstrapVersion": {
+      "Assertions": [
+        {
+          "Assert": {
+            "Fn::Not": [
+              {
+                "Fn::Contains": [
+                  [
+                    "1",
+                    "2",
+                    "3",
+                    "4",
+                    "5",
+                  ],
+                  {
+                    "Ref": "BootstrapVersion",
+                  },
+                ],
+              },
+            ],
+          },
+          "AssertDescription": "CDK bootstrap stack version 6 required. Please run 'cdk bootstrap' with a recent version of the CDK CLI.",
+        },
+      ],
+    },
+  },
+}
+`;
