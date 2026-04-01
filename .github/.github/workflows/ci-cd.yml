@@ -1,0 +1,252 @@
+# ============================================================
+# CI/CD Pipeline for mc-payment-demo
+# ============================================================
+#
+# PIPELINE FLOW:
+#
+#   Push to main
+#     → Lint & Tests
+#       → Build & CDK Synth
+#         → Deploy to Staging
+#           → E2E Tests on Staging
+#             → Manual Approval Gate
+#               → Deploy to Production
+#                 → Smoke Test Production
+#
+# HOW THIS WORKS AT MASTERCARD:
+# At Mastercard, this would integrate with their internal CI/CD
+# system (likely Jenkins or similar), with additional gates:
+# - Security scanning (Checkmarx, Snyk)
+# - Compliance validation
+# - Change management ticket auto-creation
+# - Multi-region sequential deployment
+#
+
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  NODE_VERSION: '20'
+  AWS_REGION: us-east-1
+  SERVICE_NAME: mc-payment-demo
+
+# Prevent concurrent deployments
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  # ========================================================
+  # JOB 1: Lint & Test (runs on every push and PR)
+  # ========================================================
+  test:
+    name: Lint & Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build TypeScript (required for CDK asset checks)
+        run: npm run build
+
+      - name: Run linter
+        run: npm run lint
+
+      - name: Run unit tests
+        run: npm run test:unit -- --ci --coverage
+
+      - name: Run infrastructure tests
+        run: npm run test:infra -- --ci
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage/
+
+  # ========================================================
+  # JOB 2: Build & Synthesize CDK
+  # ========================================================
+  build:
+    name: Build & Synth
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build TypeScript
+        run: npm run build
+
+      - name: Synthesize CDK (preview CloudFormation)
+        run: npm run cdk:synth
+
+      - name: CDK Diff (show what will change in staging)
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: us-east-1
+          ENV: staging
+        run: npm run cdk:diff
+        continue-on-error: true
+
+      - name: Upload CDK output
+        uses: actions/upload-artifact@v4
+        with:
+          name: cdk-output
+          path: cdk.out/
+
+  # ========================================================
+  # JOB 3: Deploy to Staging
+  # ========================================================
+  deploy-staging:
+    name: Deploy to Staging
+    needs: build
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    environment: staging
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build TypeScript
+        run: npm run build
+
+      - name: Clean up orphaned log groups (from any prior failed deploy)
+        run: |
+          aws logs delete-log-group --log-group-name "/api/$SERVICE_NAME/staging/access" --region us-east-1 2>/dev/null || true
+        continue-on-error: true
+
+      - name: Deploy to Staging
+        run: ENV=staging npx cdk deploy --require-approval never
+
+  # ========================================================
+  # JOB 4: E2E Tests on Staging
+  # ========================================================
+  e2e-staging:
+    name: E2E Tests (Staging)
+    needs: deploy-staging
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Get Staging API URL
+        id: get-url
+        run: |
+          API_URL=$(aws cloudformation describe-stacks \
+            --stack-name "$SERVICE_NAME-staging" \
+            --query "Stacks[0].Outputs[?OutputKey=='ApiUrl'].OutputValue" \
+            --output text)
+          echo "api_url=$API_URL" >> $GITHUB_OUTPUT
+          echo "Staging API: $API_URL"
+
+      - name: Run E2E Tests
+        env:
+          API_URL: ${{ steps.get-url.outputs.api_url }}
+        run: |
+          # Run E2E but don't exit on set -e for individual test failures
+          set +e
+          bash e2e-tests/run-e2e.sh
+          EXIT_CODE=$?
+          set -e
+          exit $EXIT_CODE
+
+  # ========================================================
+  # JOB 5: Deploy to Production (manual approval required)
+  # ========================================================
+  deploy-production:
+    name: Deploy to Production
+    needs: e2e-staging
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: production   # ← Pauses here for manual approval in GitHub
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build TypeScript
+        run: npm run build
+
+      - name: Clean up orphaned resources (from any prior failed deploy)
+        run: |
+          aws logs delete-log-group --log-group-name "/api/$SERVICE_NAME/production/access" --region us-east-1 2>/dev/null || true
+          # DynamoDB table is RETAINED on rollback — delete if empty before re-deploy
+          COUNT=$(aws dynamodb describe-table --table-name "$SERVICE_NAME-production-table" --region us-east-1 \
+            --query "Table.ItemCount" --output text 2>/dev/null || echo "NOT_FOUND")
+          if [ "$COUNT" = "0" ]; then
+            aws dynamodb delete-table --table-name "$SERVICE_NAME-production-table" --region us-east-1 2>/dev/null || true
+            aws dynamodb wait table-not-exists --table-name "$SERVICE_NAME-production-table" --region us-east-1 2>/dev/null || true
+          fi
+        continue-on-error: true
+
+      - name: Deploy to Production
+        run: ENV=production npx cdk deploy --require-approval never
+
+      - name: Post-deploy Smoke Test
+        run: |
+          API_URL=$(aws cloudformation describe-stacks \
+            --stack-name "$SERVICE_NAME-production" \
+            --query "Stacks[0].Outputs[?OutputKey=='ApiUrl'].OutputValue" \
+            --output text)
+          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "${API_URL}health")
+          if [ "$HTTP_STATUS" != "200" ]; then
+            echo "❌ Production smoke test failed!"
+            exit 1
+          fi
+          echo "✅ Production is healthy! URL: $API_URL"

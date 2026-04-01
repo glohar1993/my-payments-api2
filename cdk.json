@@ -1,0 +1,13 @@
+{
+  "app": "npx ts-node infra/bin/app.ts",
+  "watch": {
+    "include": ["src/**", "infra/**"],
+    "exclude": ["node_modules", "dist", "cdk.out", "**/*.test.ts"]
+  },
+  "context": {
+    "serviceName": "my-payments-api2",
+    "teamName": "platform-engineering",
+    "environment": "dev",
+    "awsRegion": "us-east-1"
+  }
+}

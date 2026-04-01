@@ -1,0 +1,121 @@
+# ============================================================
+# Backstage Catalog Registration
+# ============================================================
+#
+# This file tells Backstage about your service.
+# When Backstage scans your repo, it reads this file and
+# registers your service in the Software Catalog.
+#
+# In the Backstage UI, your team can then see:
+# - All services owned by your team
+# - API documentation
+# - Dependencies
+# - On-call information
+# - CI/CD status
+# - TechDocs
+#
+
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: my-payments-api2
+  title: my-payments-api2
+  description: my-payments-api2 microservice
+  annotations:
+    # Link to GitHub repo
+    github.com/project-slug: "${{ values.repoUrl | projectSlug }}"
+    # Link to CI/CD
+    github.com/actions-workflow: ci-cd.yml
+    # Link to TechDocs (auto-generated documentation)
+    backstage.io/techdocs-ref: dir:.
+    # CloudWatch dashboard link
+    aws.com/cloudwatch-dashboard: "my-payments-api2-dev"
+
+  tags:
+    - aws
+    - cdk
+    - typescript
+    - dev
+    - us-east-1
+
+  links:
+    - url: "https://us-east-1.console.aws.amazon.com/cloudwatch/home?region=us-east-1#dashboards:name=my-payments-api2-dev"
+      title: CloudWatch Dashboard
+      icon: dashboard
+    - url: "https://us-east-1.console.aws.amazon.com/lambda/home?region=us-east-1#/functions/my-payments-api2-dev-handler"
+      title: Lambda Console
+      icon: cloud
+
+spec:
+  type: service
+  lifecycle: dev
+  owner: platform-engineering
+  system: mastercard-payment-platform
+
+  # API provided by this service
+  providesApis:
+    - my-payments-api2-api
+
+---
+
+# API definition
+apiVersion: backstage.io/v1alpha1
+kind: API
+metadata:
+  name: my-payments-api2-api
+  description: REST API for my-payments-api2
+spec:
+  type: openapi
+  lifecycle: dev
+  owner: platform-engineering
+  definition: |
+    openapi: 3.0.0
+    info:
+      title: my-payments-api2 API
+      version: 1.0.0
+    paths:
+      /health:
+        get:
+          summary: Health check
+          responses:
+            '200':
+              description: Service is healthy
+      /items:
+        get:
+          summary: List all items
+          responses:
+            '200':
+              description: List of items
+        post:
+          summary: Create a new item
+          requestBody:
+            required: true
+            content:
+              application/json:
+                schema:
+                  type: object
+                  required: [id, data]
+                  properties:
+                    id:
+                      type: string
+                    data:
+                      type: object
+          responses:
+            '201':
+              description: Item created
+            '400':
+              description: Validation error
+      /items/{id}:
+        get:
+          summary: Get item by ID
+          parameters:
+            - name: id
+              in: path
+              required: true
+              schema:
+                type: string
+          responses:
+            '200':
+              description: Item found
+            '404':
+              description: Item not found
